@@ -69,7 +69,10 @@ struct ContentView: View {
                 FailureView(message: message)
             } else {
                 TerminalPane(process: process)
-                    .ignoresSafeArea()
+                    // Every edge but the top: ignoring the top too draws the terminal
+                    // under the title bar, which silently swallows its first two rows —
+                    // the playback block's border and the track line.
+                    .ignoresSafeArea(edges: [.horizontal, .bottom])
             }
         }
         .background(.black)
