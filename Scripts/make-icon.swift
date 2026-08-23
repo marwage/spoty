@@ -59,7 +59,8 @@ context.restoreGState()
 
 // Concentric arcs suggesting a waveform, with a filled play triangle at the centre.
 let centre = CGPoint(x: size * 0.44, y: size / 2)
-let accent = CGColor(red: 0.51, green: 0.84, blue: 0.60, alpha: 1)
+// Dracula red (#FF5555), the ANSI red the terminal theme uses — see Theme.draculaPalette.
+let accent = CGColor(red: 0xFF / 255.0, green: 0x55 / 255.0, blue: 0x55 / 255.0, alpha: 1)
 
 context.setStrokeColor(accent)
 context.setLineCap(.round)
