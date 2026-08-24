@@ -33,7 +33,7 @@ struct TerminalPane: NSViewRepresentable {
         terminal.nativeForegroundColor = Theme.foreground
         terminal.caretColor = Theme.caret
         terminal.selectedTextBackgroundColor = Theme.selection
-        terminal.installColors(Theme.draculaPalette)
+        terminal.installColors(Theme.ansiPalette)
 
         process.attach(to: terminal)
         terminal.onReady = { process.startIfNeeded() }
@@ -48,13 +48,15 @@ enum Theme {
     static let caret = NSColor(srgbRed: 0.973, green: 0.973, blue: 0.941, alpha: 1)
     static let selection = NSColor(srgbRed: 0.267, green: 0.278, blue: 0.353, alpha: 1)
 
-    /// Dracula, matching the `theme = "dracula"` in the user's app.toml. `installColors`
-    /// takes exactly the 16 ANSI colours; 16-255 are derived by SwiftTerm.
+    /// The 16 ANSI colours the TUI falls back to for anything it doesn't paint with an
+    /// explicit truecolor escape. Index 0 is pinned to the theme's pitch-black background
+    /// so an ANSI-black cell can't show up as a lighter patch. `installColors` takes
+    /// exactly these 16; 16-255 are derived by SwiftTerm.
     ///
     /// Computed rather than stored: SwiftTerm's Color is a class with mutable components,
     /// so a static array of them would be shared mutable state.
-    static var draculaPalette: [SwiftTerm.Color] {[
-        Color(red8: 0x21, green8: 0x22, blue8: 0x2C),  // black
+    static var ansiPalette: [SwiftTerm.Color] {[
+        Color(red8: 0x00, green8: 0x00, blue8: 0x00),  // black
         Color(red8: 0xFF, green8: 0x55, blue8: 0x55),  // red
         Color(red8: 0x50, green8: 0xFA, blue8: 0x7B),  // green
         Color(red8: 0xF1, green8: 0xFA, blue8: 0x8C),  // yellow
