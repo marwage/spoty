@@ -27,11 +27,14 @@ final class NowPlayingBridge {
     func activate() {
         let center = MPRemoteCommandCenter.shared()
 
+        // Distinct targets rather than three toggles: macOS sends `play` and `pause`
+        // explicitly — AirPods gestures, Control Centre — and answering those with a
+        // toggle inverts the playback whenever the two have drifted apart.
         center.playCommand.addTarget { [weak self] _ in
-            self?.state.playPause(); return .success
+            self?.state.setPlaying(true); return .success
         }
         center.pauseCommand.addTarget { [weak self] _ in
-            self?.state.playPause(); return .success
+            self?.state.setPlaying(false); return .success
         }
         center.togglePlayPauseCommand.addTarget { [weak self] _ in
             self?.state.playPause(); return .success
