@@ -11,6 +11,15 @@ import SwiftUI
 final class HostedTerminalView: LocalProcessTerminalView {
     var onReady: (() -> Void)?
     private var didSignalReady = false
+    private var scrollMonitor: Any?
+
+    // Isolated so it can touch `scrollMonitor`: NSEvent's monitor token is untyped and
+    // therefore non-Sendable, which a nonisolated deinit may not read.
+    isolated deinit {
+        if let scrollMonitor {
+            NSEvent.removeMonitor(scrollMonitor)
+        }
+    }
 
     override func layout() {
         super.layout()
@@ -18,6 +27,21 @@ final class HostedTerminalView: LocalProcessTerminalView {
         didSignalReady = true
         DispatchQueue.main.async { [weak self] in
             self?.onReady?()
+        }
+    }
+
+    /// Swallows wheel events over the terminal before AppKit dispatches them.
+    ///
+    /// A monitor rather than a `scrollWheel` override because SwiftTerm declares that
+    /// method `public` rather than `open`, so it cannot be overridden outside its module.
+    /// Clearing `allowMouseReporting` is not enough on its own either: on the alternate
+    /// screen SwiftTerm then falls back to DECSET 1007 alternate-scroll, which is on by
+    /// default and turns the wheel into cursor keys — so scrolling would move the TUI's
+    /// selection instead of changing the volume.
+    func disableScrollWheel() {
+        scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { [weak self] event in
+            guard let self, event.window === self.window else { return event }
+            return self.bounds.contains(self.convert(event.locationInWindow, from: nil)) ? nil : event
         }
     }
 }
@@ -34,6 +58,11 @@ struct TerminalPane: NSViewRepresentable {
         terminal.caretColor = Theme.caret
         terminal.selectedTextBackgroundColor = Theme.selection
         terminal.installColors(Theme.ansiPalette)
+        // Keeps the player keyboard-only: no scroll-to-change-volume, no click-to-seek.
+        // Drag-to-select still works — with reporting off SwiftTerm keeps the mouse for
+        // its own text selection instead of handing it to the child.
+        terminal.allowMouseReporting = false
+        terminal.disableScrollWheel()
 
         process.attach(to: terminal)
         terminal.onReady = { process.startIfNeeded() }
